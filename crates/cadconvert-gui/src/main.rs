@@ -79,7 +79,7 @@ impl CadConvertApp {
         match self.import_any(path) {
             Ok((format, mut drawing)) => {
                 let _ = normalize_in_place(&mut drawing, &NormalizeConfig::default());
-                self.drawing_extents = drawing.extents();
+                self.drawing_extents = compute_preview_extents(&drawing);
                 self.drawing = Some(drawing);
                 self.input_path = Some(path.to_path_buf());
                 self.input_format = Some(format.to_string());
@@ -301,6 +301,11 @@ fn draw_preview(ui: &mut egui::Ui, app: &mut CadConvertApp) {
 
     let (rect, response) = ui.allocate_exact_size(ui.available_size(), egui::Sense::drag());
     let painter = ui.painter_at(rect);
+    painter.rect_filled(
+        rect,
+        egui::CornerRadius::same(0),
+        egui::Color32::from_rgb(246, 246, 240),
+    );
 
     if response.dragged() {
         app.pan += response.drag_delta();
@@ -450,6 +455,94 @@ fn cluster_color(idx: usize) -> egui::Color32 {
         egui::Color32::from_rgb(0x63, 0x63, 0x63),
     ];
     PALETTE[idx % PALETTE.len()]
+}
+
+fn compute_preview_extents(drawing: &Drawing2D) -> Option<BBox2> {
+    let all = drawing.extents()?;
+    if drawing.entities.len() < 4 {
+        return Some(all);
+    }
+
+    let mut centers = Vec::new();
+    let mut bboxes = Vec::new();
+    for ent in &drawing.entities {
+        let bbox = ent.bbox();
+        if bbox.is_empty() {
+            continue;
+        }
+        let center = bbox.center();
+        if !center.x.is_finite() || !center.y.is_finite() {
+            continue;
+        }
+        centers.push(center);
+        bboxes.push(bbox);
+    }
+
+    if centers.len() < 4 {
+        return Some(all);
+    }
+
+    let mut xs: Vec<f64> = centers.iter().map(|c| c.x).collect();
+    let mut ys: Vec<f64> = centers.iter().map(|c| c.y).collect();
+    let Some(med_x) = median(&mut xs) else {
+        return Some(all);
+    };
+    let Some(med_y) = median(&mut ys) else {
+        return Some(all);
+    };
+
+    let mut dists = Vec::with_capacity(centers.len());
+    let mut dists_valid = Vec::with_capacity(centers.len());
+    for c in &centers {
+        let dx = c.x - med_x;
+        let dy = c.y - med_y;
+        let dist = (dx * dx + dy * dy).sqrt();
+        dists.push(dist);
+        if dist.is_finite() {
+            dists_valid.push(dist);
+        }
+    }
+
+    if dists_valid.len() < 4 {
+        return Some(all);
+    }
+
+    let mean_dist = dists_valid.iter().sum::<f64>() / dists_valid.len() as f64;
+    let median_dist = median(&mut dists_valid).unwrap_or(0.0);
+    let threshold = if median_dist > 0.0 {
+        median_dist * 6.0
+    } else {
+        mean_dist * 3.0
+    };
+
+    if !threshold.is_finite() || threshold <= 0.0 {
+        return Some(all);
+    }
+
+    let mut bbox = BBox2::empty();
+    let mut kept = 0usize;
+    for (bbox_i, dist) in bboxes.iter().zip(dists.iter()) {
+        if *dist <= threshold {
+            bbox = bbox.union(bbox_i);
+            kept += 1;
+        }
+    }
+
+    if kept == 0 {
+        Some(all)
+    } else {
+        Some(bbox)
+    }
+}
+
+fn median(values: &mut Vec<f64>) -> Option<f64> {
+    values.retain(|v| v.is_finite());
+    if values.is_empty() {
+        return None;
+    }
+    values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let mid = values.len() / 2;
+    Some(values[mid])
 }
 
 #[derive(Debug, Clone, Copy)]
