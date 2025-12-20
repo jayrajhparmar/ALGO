@@ -1,0 +1,11 @@
+[package]
+name = "cadconvert-import-svg"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+cadconvert-core = { path = "../cadconvert-core" }
+roxmltree.workspace = true
+svgtypes = "0.16.0"
+

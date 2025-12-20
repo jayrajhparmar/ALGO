@@ -1,0 +1,16 @@
+[package]
+name = "cadconvert-gui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+cadconvert-core = { path = "../cadconvert-core" }
+cadconvert-import-dxf = { path = "../cadconvert-import-dxf" }
+cadconvert-import-svg = { path = "../cadconvert-import-svg" }
+eframe.workspace = true
+egui.workspace = true
+open.workspace = true
+rfd.workspace = true
+serde.workspace = true
+serde_json.workspace = true

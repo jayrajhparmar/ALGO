@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <!-- Front view (bottom-left) -->
+  <path d="M 20 160 L 80 160 L 80 100 L 20 100 Z" stroke="black" fill="none"/>
+  <!-- Top view (top-left) -->
+  <path d="M 20 60 L 80 60 L 80 20 L 20 20 Z" stroke="black" fill="none"/>
+  <!-- Right view (bottom-right) -->
+  <path d="M 120 160 L 180 160 L 180 100 L 120 100 Z" stroke="black" fill="none"/>
+</svg>
+
