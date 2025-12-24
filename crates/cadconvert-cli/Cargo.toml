@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 anyhow.workspace = true
 cadconvert-core = { path = "../cadconvert-core" }
+cadconvert-algo = { path = "../cadconvert-algo" }
 cadconvert-import-dxf = { path = "../cadconvert-import-dxf" }
 cadconvert-import-svg = { path = "../cadconvert-import-svg" }
 clap.workspace = true

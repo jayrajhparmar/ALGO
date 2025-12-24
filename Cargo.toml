@@ -6,8 +6,8 @@ members = [
   "crates/cadconvert-import-svg",
   "crates/cadconvert-cli",
   "crates/cadconvert-gui",
+  "crates/cadconvert-algo",
 ]
-
 [workspace.package]
 edition = "2021"
 version = "0.1.0"
