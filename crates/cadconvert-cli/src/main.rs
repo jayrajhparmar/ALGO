@@ -26,6 +26,10 @@ enum Command {
         #[arg(long, default_value_t = 10)]
         min_cluster_entities: usize,
     },
+    Step {
+        input: PathBuf,
+        output: PathBuf,
+    },
 }
 
 fn main() -> Result<()> {
@@ -46,7 +50,32 @@ fn main() -> Result<()> {
             view_gap_factor,
             min_cluster_entities,
         ),
+        Command::Step { input, output } => reconstruct(&input, &output),
     }
+}
+
+fn reconstruct(input: &Path, output: &Path) -> Result<()> {
+    ensure_input_file(input)?;
+    let ext = input
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+
+    let (_format, drawing) = match ext.as_str() {
+        "dxf" => ("dxf", cadconvert_import_dxf::import_dxf(input)?),
+        _ => bail!("Unsupported input extension for reconstruction: .{ext}"),
+    };
+
+    println!("Reconstructing 3D solid from 2D views...");
+    let step_model = cadconvert_algo::reconstruct_solid(&drawing)?;
+    
+    if let Some(parent) = output.parent() {
+        std::fs::create_dir_all(parent).ok();
+    }
+    step_model.save_to_file(output)?;
+    println!("Saved STEP file to {:?}", output);
+    Ok(())
 }
 
 fn analyze(
